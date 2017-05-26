@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "chkcmd.h"
 #include "mytimer.h"
 
 #ifdef _MSC_VER
@@ -17,12 +16,12 @@
 #if 1
 
 
-static void func_on(void *vp)
+static void func_on(int id,void *vp)
 {
 	printf("func_on()\n");
 }
 
-static void func_off(void *vp)
+static void func_off(int id,void *vp)
 {
 	printf("func_off()\n");
 }
@@ -48,7 +47,7 @@ int main()
 		buf[0] = 0;
 		fgets(buf, 256, stdin);
 		if (buf[0] == 0)break;
-		mychkcmd_execute_command(buf);
+		mytimer_execute_command(buf);
 		printf("result=>>%s<<\n",p);
 		printf("\n");
 	}

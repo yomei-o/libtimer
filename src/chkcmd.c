@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define I_USE_MYTIMER
+
 #ifdef _MSC_VER
 #if _MSC_VER >= 1400
 #pragma warning( disable : 4996 )
@@ -14,8 +16,10 @@
 #endif
 
 #include "chkcmd.h"
-#include "mytimer.h"
 
+#ifdef I_USE_MYTIMER
+#include "mytimer.h"
+#endif
 //
 // output
 //
@@ -59,12 +63,15 @@ static int dummy(int argc, char* argv[])
 }
 
 struct mychkcmd_list cmd_list[] = {
+#ifdef I_USE_MYTIMER
 	{ "gettmnum", gettmnum },
 	{ "gettm", gettm },
 	{ "settm", settm },
 	{ "deltm", deltm },
+	{ "deltmall", deltmall },
 	{ "onsw", onsw },
 	{ "offsw", offsw },
+#endif
 	{ "*", dummy },
 	{ NULL,NULL},
 };
