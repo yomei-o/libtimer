@@ -30,6 +30,9 @@
 // タイマーコマンド機能を実装するときはこれを有効にする
 //#define I_IMPLIMENT_TIMER_CMD
 
+// タイマーのテストをするときはこれを有効にする
+//#define I_USE_TEST_TIME_PTN 0
+
 //
 // util
 //
@@ -292,7 +295,7 @@ int offsw(int argc, char *argv[])
 
 
 //
-// タイマーのループ関数
+// オンオフをするかどうか判定
 //
 
 
@@ -315,6 +318,30 @@ static void check_active(int gsec)
 #endif
 }
 
+#ifdef  I_USE_TEST_TIME_PTN
+static int test_ptn_cnt = 0;
+
+static int test_ptn[][100] = {
+	{ 1, 2, 3,  -1 },
+	//
+	// TODO ここにテストパターンを追加
+	//
+};
+static time_t test_time(void)
+{
+	int ret=-1;
+	ret = test_ptn[I_USE_TEST_TIME_PTN][test_ptn_cnt];
+	test_ptn_cnt++;
+	if (test_ptn[I_USE_TEST_TIME_PTN][test_ptn_cnt] < 0)test_ptn_cnt = 0;
+	return ret;
+}
+
+#endif
+
+
+//
+// タイマーのループ関数
+//
 
 static mythread_t* th = NULL;
 static int stop_flag = 0;
@@ -336,7 +363,11 @@ void mytimer_loop(void* vp)
 #ifdef I_USE_HEARTBEET
 		printf(".");
 #endif
+#ifdef  I_USE_TEST_TIME_PTN
+		t = test_time();
+#else
 		t = time(NULL);
+#endif
 		ptm=localtime(&t);
 		hour = ptm->tm_hour;
 		min = ptm->tm_min;
