@@ -55,19 +55,19 @@ struct mytimer{
 	int min;
 	int duration;
 	int flag;
-	int enabled;
-#ifdef 	I_IMPLIMENT_TIMER_CMD
-	int param1;
-	int param2;
-	void* data1;
-	void* data2;
-#endif
+	int status;
+};
+
+
+union mytimer_u{
+	int val[10];
+	struct mytimer mytimer;
 };
 
 //タイマーリストコマンド用
-static struct mytimer mytimer_list[MAX_NUM_OF_TIMER];
+static union mytimer_u mytimer_list[MAX_NUM_OF_TIMER];
 //タイマーリストループ読み込み用
-static struct mytimer mytimer_list2[MAX_NUM_OF_TIMER];
+static union mytimer_u mytimer_list2[MAX_NUM_OF_TIMER];
 
 static int read_timer_file()
 {
@@ -375,6 +375,7 @@ void mytimer_loop(void* vp)
 		gsec = hour * 3600 + min * 60 + sec;
 		check_active(gsec);
 	}
+	check_active(99999);
 	printf("\n");
 	printf("mytimer_loop() stop\n");
 }
