@@ -58,7 +58,7 @@ static int dummy(int argc, char* argv[])
 		printf("argv[%d]=>>%s<<\n", i,argv[i]);
 	}
 	printf("\n");
-	mychkcmd_print("dummy ok!");
+	mychkcmd_print("command not fount");
 	return 0;
 }
 
@@ -69,8 +69,9 @@ struct mychkcmd_list cmd_list[] = {
 	{ "settm", settm },
 	{ "deltm", deltm },
 	{ "deltmall", deltmall },
-	{ "onsw", onsw },
-	{ "offsw", offsw },
+	{ "gettmstate", gettmstate },
+	{ "getdate", getdate },
+	{ "setdate", setdate },
 #endif
 	{ "*", dummy },
 	{ NULL,NULL},

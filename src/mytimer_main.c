@@ -18,12 +18,12 @@
 
 static void func_on(int id,void *vp)
 {
-	printf("func_on()\n");
+	printf("func_on(ch=%d)\n",id);
 }
 
 static void func_off(int id,void *vp)
 {
-	printf("func_off()\n");
+	printf("func_off(ch=%d)\n",id);
 }
 
 

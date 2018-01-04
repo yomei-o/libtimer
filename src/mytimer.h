@@ -11,8 +11,10 @@ int settm(int argc,char* argv[]);
 int deltm(int argc, char* argv[]);
 int deltmall(int argc, char* argv[]);
 int gettmnum(int argc, char* argv[]);
-int onsw(int argc, char* argv[]);
-int offsw(int argc, char* argv[]);
+int gettmstate(int argc, char* argv[]);
+
+int getdate(int argc, char* argv[]);
+int setdate(int argc, char* argv[]);
 
 int mytimer_init();
 int mytimer_done();
