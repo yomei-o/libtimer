@@ -58,12 +58,15 @@ static int dummy(int argc, char* argv[])
 		printf("argv[%d]=>>%s<<\n", i,argv[i]);
 	}
 	printf("\n");
-	mychkcmd_print("command not fount");
+	mychkcmd_print("command not found!\n");
 	return 0;
 }
 
 struct mychkcmd_list cmd_list[] = {
 #ifdef I_USE_MYTIMER
+	{ "hello", hello },
+	{ "version", version },
+
 	{ "gettmnum", gettmnum },
 	{ "gettm", gettm },
 	{ "settm", settm },
@@ -80,11 +83,11 @@ struct mychkcmd_list cmd_list[] = {
 
 void mychkcmd_execute_command(const char* cmd)
 {
-	char arg[8][128];
-	char* arglist[8];
+	char arg[10][128];
+	char* arglist[10];
 
 	int i,n;
-	for (i = 0; i < 8; i++){
+	for (i = 0; i < 10; i++){
 		arg[i][0] = 0;
 		arglist[i] = arg[i];
 	}
@@ -93,8 +96,8 @@ void mychkcmd_execute_command(const char* cmd)
 		mychkcmd_print("error(100)");
 		return;
 	}
-	n=sscanf(cmd,"%s %s %s %s %s %s %s %s",
-		arg[0], arg[1], arg[2], arg[3], arg[4], arg[5], arg[6], arg[7]);
+	n=sscanf(cmd,"%s %s %s %s %s %s %s %s %s %s",
+		arg[0], arg[1], arg[2], arg[3], arg[4], arg[5], arg[6], arg[7], arg[8], arg[9]);
 	if (n < 1){
 		mychkcmd_print("error(101)");
 		return;
@@ -110,7 +113,7 @@ void mychkcmd_execute_command(const char* cmd)
 			return;
 		}
 	}
-	mychkcmd_print("error(102)");
+	mychkcmd_print("error(102)\n");
 }
 
 

@@ -9,6 +9,11 @@
 #include "ysleep.h"
 #include "cfwdipc.h"
 
+#if defined(_WIN32) && !defined(__GNUC__)
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#endif
+
 #ifdef _MSC_VER
 #if _MSC_VER >= 1400
 #pragma warning( disable : 4996 )
@@ -26,6 +31,8 @@
 #define MYTIMER_FILE_NAME "mytimer.csv"
 #define OFFSET_FILE_NAME "mytm_offset.txt"
 #define MAX_NUM_OF_CH 5
+
+#define VERSION_STR "0.0.1"
 
 #define GOTO 3
 //#define I_USE_HEARTBEET
@@ -55,6 +62,11 @@ struct mytimer{
 	int hour;
 	int min;
 	int sec;
+	//
+	int year;
+	int mon;
+	int day;
+	//
 	int duration;
 	int status;
 	int flag;
@@ -74,9 +86,10 @@ static void print_mytimer(void)
 	for (ch = 0; ch < MAX_NUM_OF_CH; ch++) {
 		for (i = 0; i < MAX_NUM_OF_TIMER; i++) {
 			if (mytimer_list[ch][i].flag == 0)continue;
-			printf("ch=%d  no=%d  %d:%d:%d %d\n", ch, i,
+			printf("ch=%d  no=%d  %d:%d:%d %d  %d-%d-%d\n", ch, i,
 				mytimer_list[ch][i].hour, mytimer_list[ch][i].min, mytimer_list[ch][i].sec,
-				mytimer_list[ch][i].duration);
+				mytimer_list[ch][i].duration,
+				mytimer_list[ch][i].year, mytimer_list[ch][i].mon, mytimer_list[ch][i].day);
 		}
 	}
 	printf("");
@@ -84,9 +97,10 @@ static void print_mytimer(void)
 	for (ch = 0; ch < MAX_NUM_OF_CH; ch++) {
 		for (i = 0; i < MAX_NUM_OF_TIMER; i++) {
 			if (mytimer_list2[ch][i].flag == 0)continue;
-			printf("ch=%d  no=%d  %d:%d:%d %d\n", ch, i,
+			printf("ch=%d  no=%d  %d:%d:%d %d  %d-%d-%d\n", ch, i,
 				mytimer_list2[ch][i].hour, mytimer_list2[ch][i].min, mytimer_list2[ch][i].sec,
-				mytimer_list2[ch][i].duration);
+				mytimer_list2[ch][i].duration,
+				mytimer_list2[ch][i].year, mytimer_list2[ch][i].mon, mytimer_list2[ch][i].day);
 		}
 	}
 	printf("");
@@ -120,7 +134,8 @@ static int read_timer_file()
 			fgets(buf, sizeof(buf), fp);
 			if (buf[0] == 0)break;
 			memset(&tt, 0, sizeof(tt));
-			sscanf(buf, "%d,%d,%d,%d,%d", &tt.ch, &tt.hour, &tt.min, &tt.sec, &tt.duration);
+			sscanf(buf, "%d,%d,%d,%d,%d,%d,%d,%d", &tt.ch, &tt.hour, &tt.min, &tt.sec, &tt.duration,
+			&tt.year,&tt.mon,&tt.day);
 			if (tt.ch != ch)continue;
 			tt.flag = 1;
 			mytimer_list[ch][ct] = tt;
@@ -158,7 +173,8 @@ static int read_timer_file2()
 			fgets(buf, sizeof(buf), fp);
 			if (buf[0] == 0)break;
 			memset(&tt, 0, sizeof(tt));
-			sscanf(buf, "%d,%d,%d,%d,%d", &tt.ch, &tt.hour, &tt.min, &tt.sec, &tt.duration);
+			sscanf(buf, "%d,%d,%d,%d,%d,%d,%d,%d", &tt.ch, &tt.hour, &tt.min, &tt.sec, &tt.duration,
+				&tt.year, &tt.mon, &tt.day);
 			if (tt.ch != ch)continue;
 			tt.flag = 1;
 			mytimer_list2[ch][ct] = tt;
@@ -184,8 +200,9 @@ static int write_timer_file()
 	for (ch = 0; ch < MAX_NUM_OF_CH; ch++) {
 		for (i = 0; i < MAX_NUM_OF_TIMER;i++) {
 			if (mytimer_list[ch][i].flag == 0)continue;
-			fprintf(fp, "%d,%d,%d,%d,%d\n", mytimer_list[ch][i].ch, mytimer_list[ch][i].hour,
-				mytimer_list[ch][i].min, mytimer_list[ch][i].sec, mytimer_list[ch][i].duration);
+			fprintf(fp, "%d,%d,%d,%d,%d,%d,%d,%d\n", mytimer_list[ch][i].ch, mytimer_list[ch][i].hour,
+				mytimer_list[ch][i].min, mytimer_list[ch][i].sec, mytimer_list[ch][i].duration,
+				mytimer_list[ch][i].year, mytimer_list[ch][i].mon, mytimer_list[ch][i].day);
 		}
 	}
 	fclose(fp);
@@ -281,6 +298,18 @@ void  mytimer_set_offunc(void  (*pfunc)(int,void*), void* vp)
 // タイマー設定コマンド
 //
 
+int hello(int argc, char *argv[])
+{
+	mychkcmd_print("hello\n");
+	return 0;
+}
+
+int version(int argc, char *argv[])
+{
+	mychkcmd_print(VERSION_STR "\n");
+	return 0;
+}
+
 static int update(void)
 {
 	void* ipc;
@@ -318,7 +347,8 @@ int gettm(int argc, char *argv[])
 	read_timer_file();
 	tt = mytimer_list[ch][a];
 next:
-	sprintf(buf,"gettm %d %d %d %d %d",tt.ch,tt.hour,tt.min,tt.sec,tt.duration);
+	sprintf(buf,"gettm_res %d %d %d %d %d %d %d %d\n",tt.ch,tt.hour,tt.min,tt.sec,tt.duration,
+		tt.year,tt.mon,tt.day);
 	mychkcmd_print(buf);
 	return 0;
 }
@@ -326,6 +356,7 @@ next:
 int settm(int argc, char *argv[])
 {
 	int h = 0, ch =0,m=0,s=0,d=0,i;
+	int yy = 0, mm = 0, dd = 0;
 	struct mytimer tt;
 	memset(&tt, 0, sizeof(tt));
 
@@ -340,11 +371,21 @@ int settm(int argc, char *argv[])
 	sscanf(argv[3], "%d", &m);
 	sscanf(argv[4], "%d", &s);
 	sscanf(argv[5], "%d", &d);
+	if (argc >= 9) {
+		sscanf(argv[6], "%d", &yy);
+		sscanf(argv[7], "%d", &mm);
+		sscanf(argv[8], "%d", &dd);
+	}
 
 	tt.ch = ch;
 	tt.hour = h;
 	tt.min = m;
 	tt.sec = s;
+
+	tt.year = yy;
+	tt.mon = mm;
+	tt.day = dd;
+
 	tt.duration = d;
 	tt.flag = 1;
 
@@ -357,7 +398,7 @@ int settm(int argc, char *argv[])
 	}
 	write_timer_file();
 next:
-	mychkcmd_print("settm ok");
+	mychkcmd_print("settm_res ok\n");
 	update();
 
 	return 0;
@@ -385,7 +426,7 @@ int deltm(int argc, char *argv[])
 	write_timer_file();
 
 next:
-	mychkcmd_print("deltm ok");
+	mychkcmd_print("deltm_res ok\n");
 	update();
 	return 0;
 }
@@ -396,7 +437,7 @@ int deltmall(int argc, char *argv[])
 	memset(mytimer_list, 0, sizeof(mytimer_list));
 	//print_mytimer();
 	write_timer_file();
-	mychkcmd_print("deltmall ok");
+	mychkcmd_print("deltmall_res ok\n");
 	update();
 	return 0;
 }
@@ -419,7 +460,7 @@ int gettmnum(int argc, char *argv[])
 	}
 
 next:
-	sprintf(buf, "gettmnum %d", a);
+	sprintf(buf, "gettmnum_res %d\n", a);
 	mychkcmd_print(buf);
 	return 0;
 }
@@ -432,12 +473,13 @@ int gettmstate(int argc, char *argv[])
 	char tmp[256];
 
 	buf[0] = 0;
-	strcat(buf, "gettmstate");
+	strcat(buf, "gettmstate_res");
 
 	for (i = 0; i < MAX_NUM_OF_CH;i++) {
 		sprintf(tmp, " %d", 1-ch_state[i]);
 		strcat(buf, tmp);
 	}
+	strcat(buf,"\n");
 	mychkcmd_print(buf);
 	return 0;
 }
@@ -460,7 +502,7 @@ int getdate(int argc, char *argv[])
 	ptt = localtime(&t);
 	if (ptt)tt = *ptt;
 
-	sprintf(buf, "getdate %d %d %d %d %d %d",
+	sprintf(buf, "getdate_res %d %d %d %d %d %d\n",
 		tt.tm_year+1900,tt.tm_mon+1,tt.tm_mday,
 		tt.tm_hour,tt.tm_min,tt.tm_sec);
 	mychkcmd_print(buf);
@@ -502,10 +544,10 @@ int setdate(int argc, char *argv[])
 	offs = (int)(offs - time(NULL));
 	printf("offs=%d\n",offs);
 	write_offset(offs);
-	mychkcmd_print("setdate ok");
+	mychkcmd_print("setdate_res ok\n");
 	return 0;
 end:
-	mychkcmd_print("setdate error");
+	mychkcmd_print("setdate_res error\n");
 	return 0;
 }
 
@@ -515,7 +557,7 @@ end:
 //
 
 
-static void check_active(int gsec)
+static void check_active(int gsec,int yy,int mm,int dd)
 {
 	int i,ch,st, ed,ss;
 	for (ch = 0; ch < MAX_NUM_OF_CH; ch++) {
@@ -525,8 +567,14 @@ static void check_active(int gsec)
 			ed = st + mytimer_list2[ch][i].duration;
 			ss = mytimer_list2[ch][i].status;
 			if (gsec >= st && gsec < ed &&ss == 0) {
-				timer_on(ch);
-				mytimer_list2[ch][i].status = 1;
+				if (mytimer_list2[ch][i].year == 0) {
+					timer_on(ch);
+					mytimer_list2[ch][i].status = 1;
+				}
+				else if(mytimer_list2[ch][i].year==yy && mytimer_list2[ch][i].mon==mm && mytimer_list2[ch][i].day==dd){
+					timer_on(ch);
+					mytimer_list2[ch][i].status = 1;
+				}
 			}
 			if ((gsec < st || gsec >= ed) && ss == 1) {
 				timer_off(ch);
@@ -584,6 +632,8 @@ void mytimer_loop(void* vp)
 	read_timer_file2();
 	offs = read_offset();
 
+	print_mytimer();
+
 	for (i = 0; i < MAX_NUM_OF_CH; i++) {
 		timer_off(i);
 	}
@@ -612,7 +662,7 @@ void mytimer_loop(void* vp)
 			ptm->tm_year+1900,ptm->tm_mon+1,ptm->tm_mday,
 			ptm->tm_hour,ptm->tm_min,ptm->tm_sec);
 #endif
-		check_active(gsec);
+		check_active(gsec,ptm->tm_year+1900,ptm->tm_mon+1,ptm->tm_mday);
 	}
 	for (i = 0; i < MAX_NUM_OF_CH; i++) {
 		timer_off(i);
@@ -675,6 +725,52 @@ const char* mytimer_get_print_buffer()
 {
 	return mychkcmd_get_print_buffer();
 }
+
+
+#if 0
+
+
+static void func_on(int id, void *vp)
+{
+	printf("func_on(ch=%d)\n", id);
+}
+
+static void func_off(int id, void *vp)
+{
+	printf("func_off(ch=%d)\n", id);
+}
+
+
+int main()
+{
+	char buf[256];
+	const char* p;
+
+#if defined(_WIN32) && !defined(__GNUC__)
+	//	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_WNDW);
+	//	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_WNDW);
+	//	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW);
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
+	mytimer_init();
+
+	p = mychkcmd_get_print_buffer();
+	mytimer_set_onfunc(func_on, NULL);
+	mytimer_set_offunc(func_off, NULL);
+	while (1) {
+		buf[0] = 0;
+		fgets(buf, 256, stdin);
+		if (buf[0] == 0)break;
+		mytimer_execute_command(buf);
+		printf("result=>>%s<<\n", p);
+		printf("\n");
+	}
+	mytimer_done();
+}
+
+
+#endif
 
 
 
